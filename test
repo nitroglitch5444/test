@@ -1,0 +1,74 @@
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- 1. SCREEN GUI CREATE KARNA (Jo screen par dikhega)
+local ScreenGui = Instance.new("ScreenGui")
+local TestButton = Instance.new("TextButton")
+
+ScreenGui.Name = "AutoTapGui"
+ScreenGui.Parent = playerGui
+ScreenGui.ResetOnSpawn = false -- Character marne par button delete nahi hoga
+
+-- 2. BUTTON KI STYLING (Tumhari screen par dikhne ke liye)
+TestButton.Name = "TestTapButton"
+TestButton.Parent = ScreenGui
+TestButton.Size = UDim2.new(0, 120, 0, 45) -- Width: 120, Height: 45
+TestButton.Position = UDim2.new(0, 20, 0, 100) -- Screen ke top-left me positioning
+TestButton.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Dark Grey Background
+TestButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White Text
+TestButton.Text = "TAP SKIP"
+TestButton.TextSize = 16
+TestButton.Font = Enum.Font.SourceSansBold
+TestButton.Active = true
+TestButton.Draggable = true -- Tum is button ko screen par kahin bhi drag kar sakte ho
+
+-- Button ke corners ko smooth/round karne ke liye
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = TestButton
+
+-- 3. ACTUAL CLIKING FUNCTION
+local function triggerSkipClick()
+    -- Skip Button ka Path
+    local skipButton = playerGui:WaitForChild("Rebirth")
+                                :WaitForChild("Main")
+                                :WaitForChild("Rebirth")
+                                :WaitForChild("Contents")
+                                :WaitForChild("Buttons")
+                                :WaitForChild("SkipRebirthButton")
+                                :WaitForChild("Btn_Skip")
+
+    if skipButton and skipButton.AbsolutePosition then
+        -- Center coordinates calculate karna
+        local x = skipButton.AbsolutePosition.X + (skipButton.AbsoluteSize.X / 2)
+        local y = skipButton.AbsolutePosition.Y + (skipButton.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
+        
+        -- DEVICE DETECTION AND TOUCH/CLICK SIMULATION
+        if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+            print("[AutoTap] Phone Detect Hua - Tapping...")
+            local touchId = 1001 
+            VirtualInputManager:SendTouchEvent(touchId, 0, x, y) -- Touch Down
+            task.wait(0.05)
+            VirtualInputManager:SendTouchEvent(touchId, 2, x, y) -- Touch Up
+        else
+            print("[AutoTap] PC Detect Hua - Clicking...")
+            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1) -- Mouse Down
+            task.wait(0.05)
+            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1) -- Mouse Up
+        end
+    else
+        warn("[AutoTap] Rebirth Skip Button screen par nahi mila!")
+    end
+end
+
+-- 4. SCREEN BUTTON KA CONNECTION
+-- getconnections ka lafda khtam karne ke liye hum standard Activated use kar rahe hain test button pe
+TestButton.Activated:Connect(function()
+    print("[AutoTap] Screen button pressed!")
+    triggerSkipClick()
+end)
