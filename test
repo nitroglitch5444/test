@@ -2,34 +2,57 @@ local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-local skipButton = playerGui:WaitForChild("Rebirth")
-                            :WaitForChild("Main")
-                            :WaitForChild("Rebirth")
-                            :WaitForChild("Contents")
-                            :WaitForChild("Buttons")
-                            :WaitForChild("SkipRebirthButton")
-                            :WaitForChild("Btn_Skip")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
-if skipButton then
-    print("[Direct Method] Button ko internal target kiya ja raha hai...")
+-- 1. SCREEN BUTTON CREATE KARNA (GUI)
+local ScreenGui = Instance.new("ScreenGui")
+local MainButton = Instance.new("TextButton")
+local UICorner = Instance.new("UICorner")
 
-    -- Step 1: Roblox Selection system me is button ko select karwana
-    local oldSelection = GuiService.SelectedObject
-    GuiService.SelectedObject = skipButton
-    
-    task.wait(0.02) -- Chota sa micro-delay engine ko register karne ke liye
+ScreenGui.Name = "DirectClickGui"
+ScreenGui.Parent = playerGui
+ScreenGui.ResetOnSpawn = false
 
-    -- Step 2: Roblox UI engine ko direct 'UI Selection Click' input bhejna
-    -- (Ye screen coordinates use nahi karta, direct SelectedObject par fire hota hai)
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game) -- UI Enter Down
-    task.wait(0.05)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game) -- UI Enter Up
+MainButton.Name = "ForceSkipBtn"
+MainButton.Parent = ScreenGui
+MainButton.Size = UDim2.new(0, 140, 0, 50)
+MainButton.Position = UDim2.new(0, 50, 0, 150)
+MainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainButton.TextColor3 = Color3.fromRGB(0, 255, 120)
+MainButton.Text = "FORCE SKIP"
+MainButton.TextSize = 18
+MainButton.Font = Enum.Font.SourceSansBold
+MainButton.Draggable = true
 
-    -- Step 3: Purani selection wapas restore karna taaki user UI glitch na ho
-    GuiService.SelectedObject = oldSelection
-    
-    print("[Direct Method] Success! Bina screen touch kiye button trigger ho gaya.")
-else
-    warn("Button nahi mila, path check karo.")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainButton
+
+-- 2. CLICK ENGINE (Bina screen block kiye exact target par hit karega)
+local function fireTargetButton()
+    local success, target = pcall(function()
+        return playerGui.Rebirth.Main.Rebirth.Contents.Buttons.SkipRebirthButton.Btn_Skip
+    end)
+
+    if success and target and target.AbsolutePosition then
+        -- Button ki exact center position screen par nikalna
+        local x = target.AbsolutePosition.X + (target.AbsoluteSize.X / 2)
+        local y = target.AbsolutePosition.Y + (target.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
+        
+        -- Virtual Mouse Click Engine (Ye camera nahi ghumne dega kyunki ye exact UI pixel pe click bhejta hai)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1) -- Click Down
+        task.wait(0.03)
+        VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1) -- Click Up
+        
+        print("[Engine] Target Button Clicked at: " .. tostring(x) .. ", " .. tostring(y))
+    else
+        warn("[Engine] Rebirth button nahi mila ya screen par visible nahi hai!")
+    end
 end
+
+-- 3. BUTTON CONNECTION
+MainButton.Activated:Connect(function()
+    fireTargetButton()
+end)
+
+print("Script Loaded successfully!")
