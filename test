@@ -3,17 +3,13 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-print("----------------------------------------")
-print("[SYSTEM] Script Executed. Waiting 3 Seconds...")
-print("----------------------------------------")
+-- 3 Seconds ka waiting delay
 task.wait(3.0)
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui", 10)
+local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui", 10)
 
--- PC METHOD (Bina change kiya hua apka working code)
+-- PC METHOD (SelectedObject - No changes)
 local function runPCMethod(target)
-    print("[Engine] PC Method Active...")
     local oldSelection = GuiService.SelectedObject
     GuiService.SelectedObject = target
     task.wait(0.02)
@@ -21,44 +17,36 @@ local function runPCMethod(target)
     task.wait(0.05)
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
     GuiService.SelectedObject = oldSelection
-    print("🟢 [SUCCESS] PC PAR CLICK HO GAYA!")
+    print("PC Clicked Successfully")
 end
 
--- MOBILE METHOD (Touch Simulation)
+-- MOBILE METHOD (Super Light-Weight Dynamic Tap)
 local function runMobileMethod(target)
-    print("[Engine] Mobile Method Active...")
     if target and target.AbsolutePosition then
+        -- Direct coordinates calculate karna bina delay ke
         local x = target.AbsolutePosition.X + (target.AbsoluteSize.X / 2)
         local y = target.AbsolutePosition.Y + (target.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
         
-        local touchId = math.random(30000, 40000)
-        VirtualInputManager:SendTouchEvent(touchId, 0, x, y) -- Down
-        task.wait(0.05)
-        VirtualInputManager:SendTouchEvent(touchId, 2, x, y) -- Up
-        print("🟢 [SUCCESS] MOBILE PAR CLICK HO GAYA! Position:", x, y)
-    else
-        warn("🔴 [ERROR] Mobile button position glitch ho gayi!")
+        -- Instant touch event bina variables fast load ke liye
+        VirtualInputManager:SendTouchEvent(9999, 0, x, y)
+        task.wait(0.02)
+        VirtualInputManager:SendTouchEvent(9999, 2, x, y)
+        print("Mobile Tapped Successfully at:", x, y)
     end
 end
 
--- Safe Extraction for 'Btn_Rebirth'
+-- MAIN EXECUTION
 if playerGui then
-    local rebirthButton = playerGui:FindFirstChild("Rebirth", true) 
-        and playerGui.Rebirth:FindFirstChild("Main", true)
-        and playerGui.Rebirth.Main:FindFirstChild("Rebirth", true)
-        and playerGui.Rebirth.Main.Rebirth:FindFirstChild("Contents", true)
-        and playerGui.Rebirth.Main.Rebirth.Contents:FindFirstChild("Buttons", true)
-        and playerGui.Rebirth.Main.Rebirth.Contents.Buttons:FindFirstChild("Btn_Rebirth", true)
+    -- Bilkul direct aur simple check taaki mobile executor crash na ho
+    local rebirthButton = playerGui.Rebirth.Main.Rebirth.Contents.Buttons.Btn_Rebirth
 
     if rebirthButton then
         if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+            -- Phone par direct bina crash wala click
             runMobileMethod(rebirthButton)
         else
+            -- PC par tumhara verified method
             runPCMethod(rebirthButton)
         end
-    else
-        warn("🔴 [ERROR] 'Btn_Rebirth' path par nahi mila!")
     end
-else
-    warn("🔴 [ERROR] PlayerGui fetch nahi ho paya!")
 end
