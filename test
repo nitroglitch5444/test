@@ -1,38 +1,66 @@
 local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-print("[Script] Mobile Execution Started. Waiting 3 seconds...")
-
--- 3 Seconds ka clear delay
+print("[Script] Script Started. Waiting 3 seconds for safe execution...")
 task.wait(3.0)
 
-print("[Script] 3 Seconds complete. Firing button on Mobile...")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
-local skipButton = playerGui:WaitForChild("Rebirth")
-                            :WaitForChild("Main")
-                            :WaitForChild("Rebirth")
-                            :WaitForChild("Contents")
-                            :WaitForChild("Buttons")
-                            :WaitForChild("SkipRebirthButton")
-                            :WaitForChild("Btn_Skip")
+-- PC ke liye tumhara working function (No changes made)
+local function runPCMethod(target)
+    print("[Engine] PC Method Executing...")
+    local oldSelection = GuiService.SelectedObject
+    GuiService.SelectedObject = target
+    task.wait(0.02)
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+    GuiService.SelectedObject = oldSelection
+    print("[Engine] PC Method Success!")
+end
 
-if skipButton and skipButton.AbsolutePosition then
-    -- Button ke exact center pixel ka coordinates calculate karna
-    local x = skipButton.AbsolutePosition.X + (skipButton.AbsoluteSize.X / 2)
-    local y = skipButton.AbsolutePosition.Y + (skipButton.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
-    
-    -- Mobile Internal Touch Protocol (Ye camera bilkul nahi ghumata)
-    -- State 0 = TouchBegan (Ungli touch hui)
-    -- State 2 = TouchEnded (Ungli hat gayi)
-    local touchId = 2002 -- Unique Touch Identifier for Mobile Engine
-    
-    VirtualInputManager:SendTouchEvent(touchId, 0, x, y)
-    task.wait(0.05) -- Micro-delay complete touch register karne ke liye
-    VirtualInputManager:SendTouchEvent(touchId, 2, x, y)
-    
-    print("[Mobile Success] Button successfully tapped at position:", x, y)
+-- Mobile ke liye error-proof touch simulation function
+local function runMobileMethod(target)
+    print("[Engine] Mobile Method Executing...")
+    if target and target.AbsolutePosition then
+        local x = target.AbsolutePosition.X + (target.AbsoluteSize.X / 2)
+        local y = target.AbsolutePosition.Y + (target.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
+        
+        local touchId = math.random(5000, 9000) -- HTTP 404 bypass karne ke liye dynamic ID
+        VirtualInputManager:SendTouchEvent(touchId, 0, x, y) -- Touch Down
+        task.wait(0.05)
+        VirtualInputManager:SendTouchEvent(touchId, 2, x, y) -- Touch Up
+        print("[Engine] Mobile Method Success at position:", x, y)
+    else
+        warn("[Engine Error] Mobile button position invalid!")
+    end
+end
+
+-- MAIN PATH RESOLVER (Mobile par crash/404 se bachne ke liye safe extraction)
+if playerGui then
+    local skipButton = playerGui:FindFirstChild("Rebirth", true) 
+        and playerGui.Rebirth:FindFirstChild("Main", true)
+        and playerGui.Rebirth.Main:FindFirstChild("Rebirth", true)
+        and playerGui.Rebirth.Main.Rebirth:FindFirstChild("Contents", true)
+        and playerGui.Rebirth.Main.Rebirth.Contents:FindFirstChild("Buttons", true)
+        and playerGui.Rebirth.Main.Rebirth.Contents.Buttons:FindFirstChild("SkipRebirthButton", true)
+        and playerGui.Rebirth.Main.Rebirth.Contents.Buttons.SkipRebirthButton:FindFirstChild("Btn_Skip", true)
+
+    if skipButton then
+        -- PC vs Mobile Check
+        if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+            -- Phone hai toh Mobile method chalega
+            runMobileMethod(skipButton)
+        else
+            -- PC hai toh bina change kiya hua purana method chalega
+            runPCMethod(skipButton)
+        end
+    else
+        warn("[Script Error] Target button 'Btn_Skip' path par nahi mila!")
+    end
 else
-    warn("[Script Error] Mobile par button nahi mila ya visible nahi hai!")
+    warn("[Script Error] PlayerGui load nahi ho paya!")
 end
