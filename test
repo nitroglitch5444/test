@@ -3,50 +3,87 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 3 Seconds ka waiting delay
-task.wait(3.0)
+print("[LOG 1] Services successfully load ho gayi hain.")
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui", 10)
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+print("[LOG 2] PlayerGui mil gaya hai.")
 
--- PC METHOD (SelectedObject - No changes)
-local function runPCMethod(target)
-    local oldSelection = GuiService.SelectedObject
-    GuiService.SelectedObject = target
-    task.wait(0.02)
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-    task.wait(0.05)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-    GuiService.SelectedObject = oldSelection
-    print("PC Clicked Successfully")
-end
+-- 1. SCREEN GUI CREATE KARNA
+local ScreenGui = Instance.new("ScreenGui")
+local TestButton = Instance.new("TextButton")
 
--- MOBILE METHOD (Super Light-Weight Dynamic Tap)
-local function runMobileMethod(target)
-    if target and target.AbsolutePosition then
-        -- Direct coordinates calculate karna bina delay ke
-        local x = target.AbsolutePosition.X + (target.AbsoluteSize.X / 2)
-        local y = target.AbsolutePosition.Y + (target.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
+ScreenGui.Name = "AutoTapGui"
+ScreenGui.Parent = playerGui
+ScreenGui.ResetOnSpawn = false
+
+-- 2. BUTTON KI STYLING (REBIRTH KE LIYE)
+TestButton.Name = "TestTapButton"
+TestButton.Parent = ScreenGui
+TestButton.Size = UDim2.new(0, 140, 0, 45)
+TestButton.Position = UDim2.new(0, 20, 0, 120)
+TestButton.BackgroundColor3 = Color3.fromRGB(20, 120, 20) -- Greenish color Rebirth ke liye
+TestButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+TestButton.Text = "TAP REBIRTH"
+TestButton.TextSize = 16
+TestButton.Font = Enum.Font.SourceSansBold
+TestButton.Active = true
+TestButton.Draggable = true
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = TestButton
+
+print("[LOG 3] Screen Button ready aur visible hai.")
+
+-- 3. ACTUAL CLICKING FUNCTION (Btn_Rebirth Path Ke Saath)
+local function triggerRebirthClick()
+    print("[LOG 4] Custom Screen Button press hua! Path dhoondh rahe hain...")
+    
+    -- Naya Rebirth Button Path jo tune diya
+    local targetButton = playerGui:WaitForChild("Rebirth")
+                                 :WaitForChild("Main")
+                                 :WaitForChild("Rebirth")
+                                 :WaitForChild("Contents")
+                                 :WaitForChild("Buttons")
+                                 :WaitForChild("Btn_Rebirth")
+
+    if targetButton and targetButton.AbsolutePosition then
+        print("[LOG 5] Target button mil gaya! Position calculate kar rahe hain...")
         
-        -- Instant touch event bina variables fast load ke liye
-        VirtualInputManager:SendTouchEvent(9999, 0, x, y)
-        task.wait(0.02)
-        VirtualInputManager:SendTouchEvent(9999, 2, x, y)
-        print("Mobile Tapped Successfully at:", x, y)
-    end
-end
-
--- MAIN EXECUTION
-if playerGui then
-    -- Bilkul direct aur simple check taaki mobile executor crash na ho
-    local rebirthButton = playerGui.Rebirth.Main.Rebirth.Contents.Buttons.Btn_Rebirth
-
-    if rebirthButton then
+        -- Center coordinates calculate karna
+        local x = targetButton.AbsolutePosition.X + (targetButton.AbsoluteSize.X / 2)
+        local y = targetButton.AbsolutePosition.Y + (targetButton.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
+        print("[LOG 6] Coordinates nikal gaye -> X:", x, "Y:", y)
+        
+        -- 4. SIMPLE DEVICE DETECTION LOGIC
+        -- Simple check: Agar touch screen enabled hai aur mouse connect nahi hai toh direct mobile hai
         if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
-            -- Phone par direct bina crash wala click
-            runMobileMethod(rebirthButton)
+            print("[LOG 7 - MOBILE] Phone detect hua! Touch Event fire ho raha hai...")
+            
+            local touchId = 1234
+            VirtualInputManager:SendTouchEvent(touchId, 0, x, y) -- Touch Down
+            task.wait(0.05)
+            VirtualInputManager:SendTouchEvent(touchId, 2, x, y) -- Touch Up
+            
+            print("[LOG 8 - MOBILE] Touch Event successfully completed!")
         else
-            -- PC par tumhara verified method
-            runPCMethod(rebirthButton)
+            print("[LOG 7 - PC] PC detect hua! Mouse Click Event fire ho raha hai...")
+            
+            VirtualInputManager:SendMouseButtonEvent(x, y, 0, true, game, 1) -- Mouse Down
+            task.wait(0.05)
+            VirtualInputManager:SendMouseButtonEvent(x, y, 0, false, game, 1) -- Mouse Up
+            
+            print("[LOG 8 - PC] Mouse Click Event successfully completed!")
         end
+    else
+        warn("[LOG ERROR] Rebirth Button game me nahi mila ya hidden hai!")
     end
 end
+
+-- 5. SCREEN BUTTON KA CONNECTION
+TestButton.Activated:Connect(function()
+    triggerRebirthClick()
+end)
+
+print("[LOG 4] Script fully loaded aur ready hai execution ke liye.")
