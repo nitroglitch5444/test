@@ -2,14 +2,13 @@ local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-print("[Script] Script execute ho gayi hai. 3 Seconds ka delay shuru...")
+print("[Script] Mobile Execution Started. Waiting 3 seconds...")
 
--- 1. Exact 3 Seconds Ka Delay
+-- 3 Seconds ka clear delay
 task.wait(3.0)
 
-print("[Script] 3 Seconds poore hue! Button fire karne ki koshish kar rahe hain...")
+print("[Script] 3 Seconds complete. Firing button on Mobile...")
 
--- 2. Target Button Path
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 local skipButton = playerGui:WaitForChild("Rebirth")
                             :WaitForChild("Main")
@@ -19,24 +18,21 @@ local skipButton = playerGui:WaitForChild("Rebirth")
                             :WaitForChild("SkipRebirthButton")
                             :WaitForChild("Btn_Skip")
 
-if skipButton then
-    print("[Direct Method] Button mil gaya. Internal target lock kiya ja raha hai...")
-
-    -- Step 1: Roblox Selection system me is button ko select karwana
-    local oldSelection = GuiService.SelectedObject
-    GuiService.SelectedObject = skipButton
+if skipButton and skipButton.AbsolutePosition then
+    -- Button ke exact center pixel ka coordinates calculate karna
+    local x = skipButton.AbsolutePosition.X + (skipButton.AbsoluteSize.X / 2)
+    local y = skipButton.AbsolutePosition.Y + (skipButton.AbsoluteSize.Y / 2) + GuiService:GetGuiInset().Y
     
-    task.wait(0.05) -- Engine ko target register karne ke liye safe micro-delay
-
-    -- Step 2: UI engine ko direct 'Selection Click' input bhejna
-    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game) -- Enter Down
-    task.wait(0.05)
-    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game) -- Enter Up
-
-    -- Step 3: Purani selection wapas restore karna
-    GuiService.SelectedObject = oldSelection
+    -- Mobile Internal Touch Protocol (Ye camera bilkul nahi ghumata)
+    -- State 0 = TouchBegan (Ungli touch hui)
+    -- State 2 = TouchEnded (Ungli hat gayi)
+    local touchId = 2002 -- Unique Touch Identifier for Mobile Engine
     
-    print("[Direct Method] Success! 3s delay ke baad button perfectly trigger ho gaya.")
+    VirtualInputManager:SendTouchEvent(touchId, 0, x, y)
+    task.wait(0.05) -- Micro-delay complete touch register karne ke liye
+    VirtualInputManager:SendTouchEvent(touchId, 2, x, y)
+    
+    print("[Mobile Success] Button successfully tapped at position:", x, y)
 else
-    warn("[Script Error] Button nahi mila, path check karo.")
+    warn("[Script Error] Mobile par button nahi mila ya visible nahi hai!")
 end
