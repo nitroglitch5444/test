@@ -2,86 +2,41 @@ local Players = game:GetService("Players")
 local GuiService = game:GetService("GuiService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+print("[Script] Script execute ho gayi hai. 3 Seconds ka delay shuru...")
 
--- 1. SCREEN BUTTON CREATE KARNA (GUI)
-local ScreenGui = Instance.new("ScreenGui")
-local MainButton = Instance.new("TextButton")
-local UICorner = Instance.new("UICorner")
+-- 1. Exact 3 Seconds Ka Delay
+task.wait(3.0)
 
-ScreenGui.Name = "DirectClickGui"
-ScreenGui.Parent = playerGui
-ScreenGui.ResetOnSpawn = false
+print("[Script] 3 Seconds poore hue! Button fire karne ki koshish kar rahe hain...")
 
-MainButton.Name = "ForceSkipBtn"
-MainButton.Parent = ScreenGui
-MainButton.Size = UDim2.new(0, 140, 0, 50)
-MainButton.Position = UDim2.new(0, 50, 0, 150)
-MainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainButton.TextColor3 = Color3.fromRGB(0, 255, 120) -- Green text
-MainButton.Text = "FORCE SKIP"
-MainButton.TextSize = 18
-MainButton.Font = Enum.Font.SourceSansBold
-MainButton.Draggable = true
+-- 2. Target Button Path
+local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local skipButton = playerGui:WaitForChild("Rebirth")
+                            :WaitForChild("Main")
+                            :WaitForChild("Rebirth")
+                            :WaitForChild("Contents")
+                            :WaitForChild("Buttons")
+                            :WaitForChild("SkipRebirthButton")
+                            :WaitForChild("Btn_Skip")
 
-UICorner.CornerRadius = UDim.new(0, 10)
-UICorner.Parent = MainButton
+if skipButton then
+    print("[Direct Method] Button mil gaya. Internal target lock kiya ja raha hai...")
 
--- Variable check karne ke liye ki script pehle se wait toh nahi kar rahi
-local isClicking = false
-
--- 2. DONT TOUCH SCREEN METHOD (Tumhara Working Code)
-local function fireTargetButton()
-    if isClicking then return end -- Agar pehle se delay chal raha hai toh dobara click na ho
-    isClicking = true
+    -- Step 1: Roblox Selection system me is button ko select karwana
+    local oldSelection = GuiService.SelectedObject
+    GuiService.SelectedObject = skipButton
     
-    MainButton.Text = "WAITING 1.5s..."
-    MainButton.TextColor3 = Color3.fromRGB(255, 150, 0) -- Orange warning text
+    task.wait(0.05) -- Engine ko target register karne ke liye safe micro-delay
+
+    -- Step 2: UI engine ko direct 'Selection Click' input bhejna
+    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game) -- Enter Down
+    task.wait(0.05)
+    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game) -- Enter Up
+
+    -- Step 3: Purani selection wapas restore karna
+    GuiService.SelectedObject = oldSelection
     
-    -- Tumhara manga hua 1.5 second ka delay
-    task.wait(1.5)
-    
-    -- Path check karna
-    local skipButton = playerGui:WaitForChild("Rebirth")
-                                :WaitForChild("Main")
-                                :WaitForChild("Rebirth")
-                                :WaitForChild("Contents")
-                                :WaitForChild("Buttons")
-                                :WaitForChild("SkipRebirthButton")
-                                :WaitForChild("Btn_Skip")
-
-    if skipButton then
-        print("[Direct Method] Button ko internal target kiya ja raha hai...")
-
-        -- Step 1: Roblox Selection system me is button ko select karwana
-        local oldSelection = GuiService.SelectedObject
-        GuiService.SelectedObject = skipButton
-        
-        task.wait(0.02) 
-
-        -- Step 2: Direct 'UI Selection Click' input bhejna
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game) -- UI Enter Down
-        task.wait(0.05)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game) -- UI Enter Up
-
-        -- Step 3: Purani selection wapas restore karna
-        GuiService.SelectedObject = oldSelection
-        
-        print("[Direct Method] Success! Bina screen touch kiye button trigger ho gaya.")
-    else
-        warn("Button nahi mila, path check karo.")
-    end
-    
-    -- Button ko wapas normal state me lana
-    MainButton.Text = "FORCE SKIP"
-    MainButton.TextColor3 = Color3.fromRGB(0, 255, 120)
-    isClicking = false
+    print("[Direct Method] Success! 3s delay ke baad button perfectly trigger ho gaya.")
+else
+    warn("[Script Error] Button nahi mila, path check karo.")
 end
-
--- 3. BUTTON CLICK CONNECTION
-MainButton.Activated:Connect(function()
-    fireTargetButton()
-end)
-
-print("Upgraded Script Loaded: 1.5s delay added!")
