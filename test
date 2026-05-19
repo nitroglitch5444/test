@@ -1,60 +1,63 @@
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local GuiService = game:GetService("GuiService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
--- 1. Pehle naya UI screen par layenge (Bina wait kiye)
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- 1. SCREEN BUTTON CREATE KARNA
 local ScreenGui = Instance.new("ScreenGui")
-local FastRebirthBtn = Instance.new("TextButton")
+local MainButton = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
 
--- CoreGui ke badle PlayerGui use kar rahe hain taaki har executor me dikhe
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.Name = "FastRebirthUI"
-ScreenGui.ResetOnSpawn = false -- Character marne par button nahi hatega
+ScreenGui.Name = "DirectClickGui"
+ScreenGui.Parent = playerGui
+ScreenGui.ResetOnSpawn = false
 
--- Button Settings (Screen ke right side me center me dikhega)
-FastRebirthBtn.Name = "FastRebirthBtn"
-FastRebirthBtn.Parent = ScreenGui
-FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-FastRebirthBtn.Position = UDim2.new(0.85, 0, 0.45, 0) 
-FastRebirthBtn.Size = UDim2.new(0, 90, 0, 45) -- Thoda bada size mobile ke liye
-FastRebirthBtn.Font = Enum.Font.GothamBold
-FastRebirthBtn.Text = "REBIRTH"
-FastRebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FastRebirthBtn.TextSize = 14.000
-FastRebirthBtn.Active = true
-FastRebirthBtn.Draggable = true 
+MainButton.Name = "ForceSkipBtn"
+MainButton.Parent = ScreenGui
+MainButton.Size = UDim2.new(0, 140, 0, 50)
+MainButton.Position = UDim2.new(0, 50, 0, 150)
+MainButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainButton.TextColor3 = Color3.fromRGB(0, 255, 120) -- Greenish Text
+MainButton.Text = "FORCE SKIP"
+MainButton.TextSize = 18
+MainButton.Font = Enum.Font.SourceSansBold
+MainButton.Draggable = true -- Isse button kahi bhi move kar sakte ho
 
-UICorner.Parent = FastRebirthBtn
 UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainButton
 
--- 2. Game ke original Rebirth button ko background me find karne ka logic
-local function fireRebirth()
-    -- Har baar direct path check karega bina script ko freeze kiye
-    local success, errMsg = pcall(function()
-        local rebirthButton = LocalPlayer.PlayerGui.Rebirth.Main.Rebirth.Contents.Buttons.Btn_Rebirth
-        if rebirthButton then
-            for _, connection in pairs(getconnections(rebirthButton.Activated)) do
-                connection:Fire()
-            end
-            -- Fallback agar pehla tarika game detect na kare
-            for _, connection in pairs(getconnections(rebirthButton.MouseButton1Click)) do
-                connection:Fire()
-            end
-        end
+-- 2. DIRECT FIRE FUNCTION (Bina Screen Touch Wala)
+local function fireTargetButton()
+    -- Path: Jo tumne bataya tha
+    local success, target = pcall(function()
+        return playerGui.Rebirth.Main.Rebirth.Contents.Buttons.SkipRebirthButton.Btn_Skip
     end)
-    
-    if not success then
-        print("Rebirth button abhi game me nahi mila: ", errMsg)
+
+    if success and target then
+        -- Step A: Target button ko focus/select karna
+        local oldSelection = GuiService.SelectedObject
+        GuiService.SelectedObject = target
+        
+        task.wait(0.02)
+
+        -- Step B: Direct Internal Input bhejna (Return/Enter Key)
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+        task.wait(0.05)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+
+        -- Step C: Selection clear karna
+        GuiService.SelectedObject = oldSelection
+        print("Success: Button Direct Fire Ho Gaya!")
+    else
+        warn("Error: Skip Button nahi mila, path check karo!")
     end
 end
 
--- 3. Tap karne par function call hoga
-FastRebirthBtn.Activated:Connect(function()
-    -- Visual indicator
-    FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-    
-    fireRebirth()
-    
-    task.wait(0.1)
-    FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+-- 3. CLICK EVENT
+MainButton.Activated:Connect(function()
+    fireTargetButton()
 end)
+
+print("Script Loaded: FORCE SKIP button screen par aa gaya hai.")
