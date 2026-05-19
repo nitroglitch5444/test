@@ -1,44 +1,60 @@
--- 1. Main Rebirth Button ka path
-local rebirthButton = game:GetService("Players").LocalPlayer.PlayerGui:WaitForChild("Rebirth").Main.Rebirth.Contents.Buttons.Btn_Rebirth
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
--- 2. Naya UI Create Karna (Mobile Friendly)
+-- 1. Pehle naya UI screen par layenge (Bina wait kiye)
 local ScreenGui = Instance.new("ScreenGui")
 local FastRebirthBtn = Instance.new("TextButton")
 local UICorner = Instance.new("UICorner")
 
--- GUI ko CoreGui me daal rahe hain taaki reset hone par delete na ho
-ScreenGui.Parent = game:GetService("CoreGui")
+-- CoreGui ke badle PlayerGui use kar rahe hain taaki har executor me dikhe
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.Name = "FastRebirthUI"
+ScreenGui.ResetOnSpawn = false -- Character marne par button nahi hatega
 
--- Button ke Looks aur Position (Screen ke right side me center ke paas)
+-- Button Settings (Screen ke right side me center me dikhega)
 FastRebirthBtn.Name = "FastRebirthBtn"
 FastRebirthBtn.Parent = ScreenGui
-FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 25) -- Dark Background
-FastRebirthBtn.Position = UDim2.new(0.85, 0, 0.45, 0) -- Right side center
-FastRebirthBtn.Size = UDim2.new(0, 80, 0, 45) -- Mobile friendly size
-FastRebirthBtn.Font = Enum.Font.SourceSansBold
-FastRebirthBtn.Text = "Rebirth"
+FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+FastRebirthBtn.Position = UDim2.new(0.85, 0, 0.45, 0) 
+FastRebirthBtn.Size = UDim2.new(0, 90, 0, 45) -- Thoda bada size mobile ke liye
+FastRebirthBtn.Font = Enum.Font.GothamBold
+FastRebirthBtn.Text = "REBIRTH"
 FastRebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-FastRebirthBtn.TextSize = 16.000
+FastRebirthBtn.TextSize = 14.000
 FastRebirthBtn.Active = true
-FastRebirthBtn.Draggable = true -- Aap isko screen par kahin bhi move kar sakte hain
+FastRebirthBtn.Draggable = true 
 
--- Button ke corners ko round karne ke liye
 UICorner.Parent = FastRebirthBtn
-UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.CornerRadius = UDim.new(0, 10)
 
--- 3. Click/Tap Karne Par Kya Hoga (Logic)
-FastRebirthBtn.Activated:Connect(function()
-    if rebirthButton then
-        -- Rebirth button ke saare functions ko fire karega
-        for _, connection in pairs(getconnections(rebirthButton.Activated)) do
-            connection:Fire()
+-- 2. Game ke original Rebirth button ko background me find karne ka logic
+local function fireRebirth()
+    -- Har baar direct path check karega bina script ko freeze kiye
+    local success, errMsg = pcall(function()
+        local rebirthButton = LocalPlayer.PlayerGui.Rebirth.Main.Rebirth.Contents.Buttons.Btn_Rebirth
+        if rebirthButton then
+            for _, connection in pairs(getconnections(rebirthButton.Activated)) do
+                connection:Fire()
+            end
+            -- Fallback agar pehla tarika game detect na kare
+            for _, connection in pairs(getconnections(rebirthButton.MouseButton1Click)) do
+                connection:Fire()
+            end
         end
-        -- Visual feedback (Click karne par ek bar green flash hoga)
-        FastRebirthBtn.TextColor3 = Color3.fromRGB(0, 255, 0)
-        task.wait(0.1)
-        FastRebirthBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    else
-        warn("Rebirth button nahi mila!")
+    end)
+    
+    if not success then
+        print("Rebirth button abhi game me nahi mila: ", errMsg)
     end
+end
+
+-- 3. Tap karne par function call hoga
+FastRebirthBtn.Activated:Connect(function()
+    -- Visual indicator
+    FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    
+    fireRebirth()
+    
+    task.wait(0.1)
+    FastRebirthBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 end)
